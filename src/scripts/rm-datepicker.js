@@ -8,7 +8,6 @@
  */
 
 (function () {
-    'use strict';
 
     var Module = angular.module('rmDatepicker', []);
 
@@ -54,10 +53,10 @@
             var adjustDate = function (date) {
                 var date = parseInt(date, 10);
                 if (!isNaN(date)) {
-                    var max = daysInMonth(scope.j.getFullYear(), scope.j.getMonth());
+                    var max = daysInMonth(scope.date.getFullYear(), scope.date.getMonth());
                     if (date < 1) date = 1;
                     if (date > max) date = max;
-                    scope.j.setDate(date);
+                    scope.date.setDate(date);
                 }
             };
             var gen = {
@@ -121,7 +120,7 @@
             };
             var refresh = function (state) {
                 state = state || scope.state;
-                scope.aDates = gen[state](scope.j);
+                scope.aDates = gen[state](scope.date);
 
                 if (conf.min) {
                     //if(scope.aDates[0] < conf.min) scope.aDates[0].setDate( conf.min.getDate() );
@@ -134,11 +133,10 @@
                 }
             };
             var init = function () {
-                if (!scope.j) {scope.j = new Date();}
+                if (!scope.date) {scope.date = new Date();}
                 return refresh();
             };
 
-            //TODO: optimize this method
             var isBefore = function (oDate1, oDate2) {
                 if (scope.state == "decade")
                     return oDate1.getFullYear() < oDate2.getFullYear();
@@ -162,13 +160,13 @@
             };
             scope.isActive = {
                 year: function (oDate) {
-                    return oDate.getFullYear() == scope.j.getFullYear();
+                    return oDate.getFullYear() == scope.date.getFullYear();
                 },
                 month: function (oDate) {
-                    return oDate.getMonth() == scope.j.getMonth();
+                    return oDate.getMonth() == scope.date.getMonth();
                 },
                 date: function (oDate) {
-                    return oDate.getDate() == scope.j.getDate();
+                    return oDate.getDate() == scope.date.getDate();
                 }
             };
             scope.isToday = function (oDate) {
@@ -181,23 +179,22 @@
                 if (scope.isOff(oDate)) return;
 
                 if( isInput && scope.state == conf.minState && scope.isActive.month(oDate) ) {
-                    scope.show = false;
-                    overlay.css("display", "none");
+                    togglePicker(false);
                 }
 
-                var m = scope.j.getMonth();
+                var m = scope.date.getMonth();
 
-                scope.j = new Date(oDate);
+                scope.date = new Date(oDate);
                 $timeout(function () {
-                    ngModel.$setViewValue(scope.j);
+                    ngModel.$setViewValue(scope.date);
                 });
                 if (conf.toggleState) scope.toggleState(1);
 
-                if (m != scope.j.getMonth())
+                if (m != scope.date.getMonth())
                     refresh();
             };
             scope.now = function () {
-                scope.j = new Date();
+                scope.date = new Date();
                 refresh();
             };
             scope.next = function (delta) {
@@ -210,23 +207,23 @@
                     if (isReached.min) return;
                 }
 
-                var Y = scope.j.getFullYear(),
-                    m = scope.j.getMonth(),
-                    d = scope.j.getDate();
+                var Y = scope.date.getFullYear(),
+                    m = scope.date.getMonth(),
+                    d = scope.date.getDate();
 
                 switch (scope.state) {
                     case "decade":
                         delta = delta * scope.aDates.length;
                     case "year":
-                        scope.j.setFullYear(Y + delta, m, 15);
+                        scope.date.setFullYear(Y + delta, m, 15);
                         adjustDate(d);
                         break;
                     case "month":
-                        scope.j.setMonth(m + delta, 15);
+                        scope.date.setMonth(m + delta, 15);
                         adjustDate(d);
                         break;
                     case "week" :
-                        scope.j.setDate(d + (delta * 7));
+                        scope.date.setDate(d + (delta * 7));
                         break;
                 }
                 refresh();
@@ -273,22 +270,21 @@
                 }
                 return {top: y, left: x};
             };
-            var togglePicker = function(toggle) {
+            var togglePicker = function (toggle) {
                 overlay.css("display", toggle ? "block" : "none");
-                scope.show = toggle;
-                scope.$apply();
+                calendar.css("display", toggle ? "block" : "none");
             };
-            var adjustPos = function (el) {
+            var adjustPos = function (pos, el) {
                 var scrollX = window.scrollX,
                     scrollY = window.scrollY,
                     innerWidth = window.innerWidth,
                     innerHeight = window.innerHeight;
 
-                if (window.innerWidth < 481)
+                if (window.innerWidth < 481) {
                     return {top: scrollY, left: 0};
+                }
 
-                var pos = offset(el),
-                    marginBottom = scrollY + innerHeight - pos.top - el.clientHeight,
+                var marginBottom = scrollY + innerHeight - pos.top - el.clientHeight,
                     marginRight = scrollX + innerWidth - pos.left - el.clientWidth;
 
                 if (marginBottom < 0) pos.top += marginBottom;
@@ -300,50 +296,46 @@
             };
 
             if (isInput) {
-                scope.show = false;
-
-                ngModel.$parsers.push(function(sDate) {
+                ngModel.$parsers.push(function (sDate) {
                     return new Date(sDate);
                 });
-                ngModel.$formatters.push(function(oDate) {
+                ngModel.$formatters.push(function (oDate) {
                     return $filter('date')(oDate, conf.format);
                 });
 
-                element.after($compile(TEMPLATE)(scope));
-
-                var calendar = element.next();
                 var overlay = angular.element('<div class="rm-overlay" style="display:none"></div>');
-                    overlay.on('click', function() {
-                        togglePicker(false);
-                    });
-                    $document.find('body').eq(0).append(overlay);
+                overlay.on('click', function () {
+                    togglePicker(false);
+                });
+                $document.find('body').eq(0).append(overlay);
+                overlay.after($compile(TEMPLATE)(scope));
+                var calendar = overlay.next();
+                calendar.css({display: "none"});
+                calendar.addClass('it-is-input');
 
-                element.on('click', function() {
+                element.on('click', function () {
 
-                    if( window.innerWidth < 481 ) element[0].blur();
-                    var pos = offset( element[0] );
-                        pos.top += element[0].offsetHeight +1;
+                    if (window.innerWidth < 481) element[0].blur();
+                    var pos = offset(element[0]);
+                    pos.top += element[0].offsetHeight + 1;
 
-                    scope.style = {top: pos.top + "px", left: pos.left + "px"};
+                    calendar.css({top: pos.top + "px", left: pos.left + "px", display: "block"});
                     togglePicker(true);
-                    pos = adjustPos(calendar[0]);
-                    scope.style = {top: pos.top + "px", left: pos.left + "px"};
-                    scope.$apply();
+                    pos = adjustPos(pos, calendar[0]);
+                    calendar.css({top: pos.top + "px", left: pos.left + "px"});
                 });
 
-                $document.on('keydown', function(e) {
+                $document.on('keydown', function (e) {
                     if ([9, 13, 27].indexOf(e.keyCode) >= 0) togglePicker(false);
                 });
             }
             else {
-                scope.show = true;
                 element.append($compile(TEMPLATE)(scope));
             }
         };
 
-        //TODO: template may need optimization :)
         var TEMPLATE =
-        '<div class="rm-datepicker" ng-class="{mondayStart: mondayStart}" ng-show="show" ng-style="style">' +
+        '<div class="rm-datepicker" ng-class="{mondayStart: mondayStart}">' +
             '<div class="nav">' +
                 '<a><i class="mi_arrow_back"></i></a>' +
                 '<a class="back waves-effect" ng-click="toggleState(-1)" rm-include="activeDateTpl[state]"></a>' +
