@@ -53,10 +53,10 @@
             var adjustDate = function (date) {
                 var date = parseInt(date, 10);
                 if (!isNaN(date)) {
-                    var max = daysInMonth(scope.j.getFullYear(), scope.j.getMonth());
+                    var max = daysInMonth(scope.date.getFullYear(), scope.date.getMonth());
                     if (date < 1) date = 1;
                     if (date > max) date = max;
-                    scope.j.setDate(date);
+                    scope.date.setDate(date);
                 }
             };
             var gen = {
@@ -120,7 +120,7 @@
             };
             var refresh = function (state) {
                 state = state || scope.state;
-                scope.aDates = gen[state](scope.j);
+                scope.aDates = gen[state](scope.date);
 
                 if (conf.min) {
                     //if(scope.aDates[0] < conf.min) scope.aDates[0].setDate( conf.min.getDate() );
@@ -133,11 +133,10 @@
                 }
             };
             var init = function () {
-                if (!scope.j) {scope.j = new Date();}
+                if (!scope.date) {scope.date = new Date();}
                 return refresh();
             };
 
-            //TODO: optimize this method
             var isBefore = function (oDate1, oDate2) {
                 if (scope.state == "decade")
                     return oDate1.getFullYear() < oDate2.getFullYear();
@@ -161,13 +160,13 @@
             };
             scope.isActive = {
                 year: function (oDate) {
-                    return oDate.getFullYear() == scope.j.getFullYear();
+                    return oDate.getFullYear() == scope.date.getFullYear();
                 },
                 month: function (oDate) {
-                    return oDate.getMonth() == scope.j.getMonth();
+                    return oDate.getMonth() == scope.date.getMonth();
                 },
                 date: function (oDate) {
-                    return oDate.getDate() == scope.j.getDate();
+                    return oDate.getDate() == scope.date.getDate();
                 }
             };
             scope.isToday = function (oDate) {
@@ -183,19 +182,19 @@
                     togglePicker(false);
                 }
 
-                var m = scope.j.getMonth();
+                var m = scope.date.getMonth();
 
-                scope.j = new Date(oDate);
+                scope.date = new Date(oDate);
                 $timeout(function () {
-                    ngModel.$setViewValue(scope.j);
+                    ngModel.$setViewValue(scope.date);
                 });
                 if (conf.toggleState) scope.toggleState(1);
 
-                if (m != scope.j.getMonth())
+                if (m != scope.date.getMonth())
                     refresh();
             };
             scope.now = function () {
-                scope.j = new Date();
+                scope.date = new Date();
                 refresh();
             };
             scope.next = function (delta) {
@@ -208,23 +207,23 @@
                     if (isReached.min) return;
                 }
 
-                var Y = scope.j.getFullYear(),
-                    m = scope.j.getMonth(),
-                    d = scope.j.getDate();
+                var Y = scope.date.getFullYear(),
+                    m = scope.date.getMonth(),
+                    d = scope.date.getDate();
 
                 switch (scope.state) {
                     case "decade":
                         delta = delta * scope.aDates.length;
                     case "year":
-                        scope.j.setFullYear(Y + delta, m, 15);
+                        scope.date.setFullYear(Y + delta, m, 15);
                         adjustDate(d);
                         break;
                     case "month":
-                        scope.j.setMonth(m + delta, 15);
+                        scope.date.setMonth(m + delta, 15);
                         adjustDate(d);
                         break;
                     case "week" :
-                        scope.j.setDate(d + (delta * 7));
+                        scope.date.setDate(d + (delta * 7));
                         break;
                 }
                 refresh();
@@ -335,7 +334,6 @@
             }
         };
 
-        //TODO: template may need optimization :)
         var TEMPLATE =
         '<div class="rm-datepicker" ng-class="{mondayStart: mondayStart}">' +
             '<div class="nav">' +
