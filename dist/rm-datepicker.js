@@ -9,6 +9,8 @@
 
 (function () {
 
+  'use strict';
+
     var Module = angular.module('rmDatepicker', []);
 
     Module.constant('rmDatepickerConfig', {
@@ -25,7 +27,7 @@
 
         min: null,
         max: null,
-        format: "yyyy-MM-dd"
+        format: "dd/MM/yyyy"
     });
 
     Module.directive("rmDatepicker", ['rmDatepickerConfig', '$compile', '$filter', '$document', '$timeout',
@@ -53,10 +55,10 @@
             var adjustDate = function (date) {
                 var date = parseInt(date, 10);
                 if (!isNaN(date)) {
-                    var max = daysInMonth(scope.date.getFullYear(), scope.date.getMonth());
+                    var max = daysInMonth(scope.model.getFullYear(), scope.model.getMonth());
                     if (date < 1) date = 1;
                     if (date > max) date = max;
-                    scope.date.setDate(date);
+                    scope.model.setDate(date);
                 }
             };
             var gen = {
@@ -120,7 +122,13 @@
             };
             var refresh = function (state) {
                 state = state || scope.state;
-                scope.aDates = gen[state](scope.date);
+
+                if(scope.model){
+                  scope.model = new Date(scope.model);
+                  scope.initialDate = scope.model;
+                }
+
+                scope.aDates = gen[state](scope.initialDate);
 
                 if (conf.min) {
                     //if(scope.aDates[0] < conf.min) scope.aDates[0].setDate( conf.min.getDate() );
@@ -133,8 +141,8 @@
                 }
             };
             var init = function () {
-                if (!scope.date) {scope.date = new Date();}
-                return refresh();
+                scope.initialDate = new Date(scope.initialDate || scope.model || new Date());
+                scope.$watch(scope.initialDate, function() { refresh(); });
             };
 
             var isBefore = function (oDate1, oDate2) {
@@ -160,13 +168,13 @@
             };
             scope.isActive = {
                 year: function (oDate) {
-                    return oDate.getFullYear() == scope.date.getFullYear();
+                    return oDate.getFullYear() == scope.initialDate.getFullYear();
                 },
                 month: function (oDate) {
-                    return oDate.getMonth() == scope.date.getMonth();
+                    return oDate.getMonth() == scope.initialDate.getMonth();
                 },
                 date: function (oDate) {
-                    return oDate.getDate() == scope.date.getDate();
+                    return oDate.getDate() == scope.initialDate.getDate();
                 }
             };
             scope.isToday = function (oDate) {
@@ -182,22 +190,28 @@
                     togglePicker(false);
                 }
 
-                var m = scope.date.getMonth();
+                var m = scope.initialDate.getMonth();
 
-                scope.date = new Date(oDate);
+                scope.model = new Date(oDate);
+                scope.initialDate = scope.model;
+
                 $timeout(function () {
-                    ngModel.$setViewValue(scope.date);
+                    ngModel.$setViewValue(scope.model);
                 });
                 if (conf.toggleState) scope.toggleState(1);
 
-                if (m != scope.date.getMonth())
-                    refresh();
+                if (m != scope.initialDate.getMonth()){
+                  refresh();
+                }
             };
             scope.now = function () {
-                scope.date = new Date();
+                scope.model = new Date();
+                scope.initialDate = scope.model;
                 refresh();
             };
             scope.next = function (delta) {
+                scope.model = scope.model || scope.initialDate;
+
                 delta = delta || 1;
 
                 if (delta > 0) {
@@ -207,29 +221,28 @@
                     if (isReached.min) return;
                 }
 
-                var Y = scope.date.getFullYear(),
-                    m = scope.date.getMonth(),
-                    d = scope.date.getDate();
+                var Y = scope.model.getFullYear(),
+                    m = scope.model.getMonth(),
+                    d = scope.model.getDate();
 
                 switch (scope.state) {
                     case "decade":
                         delta = delta * scope.aDates.length;
                     case "year":
-                        scope.date.setFullYear(Y + delta, m, 15);
+                        scope.model.setFullYear(Y + delta, m, 15);
                         adjustDate(d);
                         break;
                     case "month":
-                        scope.date.setMonth(m + delta, 15);
+                        scope.model.setMonth(m + delta, 15);
                         adjustDate(d);
                         break;
                     case "week" :
-                        scope.date.setDate(d + (delta * 7));
+                        scope.model.setDate(d + (delta * 7));
                         break;
                 }
                 refresh();
             };
             scope.prev = function (delta) {
-                // delta = (delta == undefined) ? 1 : Math.abs( delta );
                 return scope.next(-delta || -1);
             };
             scope.toggleState = function (direction) {
@@ -249,25 +262,18 @@
             scope.aStates = ["decade", "year", "month"];
             scope.state = conf.initState;
 
-            //TODO: this(together with rmInclude directive below) is a quick implementation, maybe there is a better idea
-            scope.activeDateTpl = {
-                decade: "{{aDates[0].getFullYear()}} - {{aDates[aDates.length-1].getFullYear()}}",
-                year: "{{j.getFullYear()}}",
-                month: "{{j | date: 'MMMM yyyy'}}",
-                week: "{{ j | date: 'd MMMM yyyy' }}"
-            };
 
             init(); // generate initial state
 
-            var offset = function (objElement) {
+            var offset = function (objElement, container) {
                 var x = 0, y = 0;
 
-                if (objElement.offsetParent) {
-                    do {
-                        x += objElement.offsetLeft;
-                        y += objElement.offsetTop;
-                    } while (objElement = objElement.offsetParent);
-                }
+                do {
+                    x += objElement.offsetLeft;
+                    y += objElement.offsetTop;
+                    objElement = objElement.offsetParent
+                } while (objElement != container);
+
                 return {top: y, left: x};
             };
             var togglePicker = function (toggle) {
@@ -307,21 +313,30 @@
                 overlay.on('click', function () {
                     togglePicker(false);
                 });
-                $document.find('body').eq(0).append(overlay);
+
+                var overlayContainer = element.closest(".scroll-container");
+                overlayContainer.append(overlay);
+
                 overlay.after($compile(TEMPLATE)(scope));
+
                 var calendar = overlay.next();
                 calendar.css({display: "none"});
                 calendar.addClass('it-is-input');
 
                 element.on('click', function () {
+                    var el = element[0];
+                    if(el.readOnly){
+                        return;
+                    }
 
-                    if (window.innerWidth < 481) element[0].blur();
-                    var pos = offset(element[0]);
-                    pos.top += element[0].offsetHeight + 1;
+                    if (window.innerWidth < 481) el.blur();
+                    var pos = offset(el, overlayContainer.get(0));
+
+                    pos.top += el.offsetHeight + 1;
 
                     calendar.css({top: pos.top + "px", left: pos.left + "px", display: "block"});
                     togglePicker(true);
-                    pos = adjustPos(pos, calendar[0]);
+
                     calendar.css({top: pos.top + "px", left: pos.left + "px"});
                 });
 
@@ -338,7 +353,12 @@
         '<div class="rm-datepicker" ng-class="{mondayStart: mondayStart}">' +
             '<div class="nav">' +
                 '<a><i class="mi_arrow_back"></i></a>' +
-                '<a class="back waves-effect" ng-click="toggleState(-1)" rm-include="activeDateTpl[state]"></a>' +
+                '<a class="back waves-effect" ng-click="toggleState(-1)">' +
+                  '<span ng-show="state == \'decade\'">{{aDates[0].getFullYear()}} - {{aDates[aDates.length-1].getFullYear()}}</span>' +
+                  '<span ng-show="state == \'year\'">{{initialDate.getFullYear()}}</span>' +
+                  '<span ng-show="state == \'month\'">{{initialDate | date: \'MMMM yyyy\'}}</span>' +
+                  '<span ng-show="state == \'week\'">{{initialDate | date: \'d MMMM yyyy\' }}</span>' +
+                '</a>' +
                 '<a class="adjacent waves-effect" ng-click="prev()"><i class="mi_keyboard_arrow_up"></i></a>' +
                 '<a class="adjacent waves-effect" ng-click="next()"><i class="mi_keyboard_arrow_down"></i></a>' +
                 '<a class="today waves-effect" ng-click="now()">{{textToday}}</a>' +
@@ -376,31 +396,11 @@
         return {
             require: 'ngModel',
             scope: {
-                j: '=ngModel', /* active date */
+                model: '=ngModel',
+                initialDate: '=?rmInitialDate',
                 rmConfig: "=rmConfig"
             },
             link: link
         }
     }]);
-
-    Module.directive('rmInclude', ['$compile', function ($compile) {
-
-        var link = function (scope, element, attrs) {
-            scope.$watch(
-                function (scope) {
-                    return scope.$eval(attrs.rmInclude);
-                }
-                , function (value) {
-                    element.html(value);
-                    $compile(element.contents())(scope);
-                });
-        };
-
-        return {
-            restrict: "A",
-            link: link
-        };
-    }]);
-
-
 }());

@@ -332,8 +332,6 @@
                     if (window.innerWidth < 481) el.blur();
                     var pos = offset(el, overlayContainer.get(0));
 
-                    //var pos = {top: el.offsetTop, left: el.offsetLeft}
-
                     pos.top += el.offsetHeight + 1;
 
                     calendar.css({top: pos.top + "px", left: pos.left + "px", display: "block"});
