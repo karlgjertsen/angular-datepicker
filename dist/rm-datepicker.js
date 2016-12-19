@@ -280,23 +280,13 @@
                 overlay.css("display", toggle ? "block" : "none");
                 calendar.css("display", toggle ? "block" : "none");
             };
-            var adjustPos = function (pos, el) {
-                var scrollX = window.scrollX,
-                    scrollY = window.scrollY,
-                    innerWidth = window.innerWidth,
-                    innerHeight = window.innerHeight;
 
-                if (window.innerWidth < 481) {
-                    return {top: scrollY, left: 0};
+            var adjustPos = function (pos, el, container) {
+
+                var overspill = (pos.top + el.clientHeight) - container.clientHeight;
+                if(overspill > 0){
+                  pos.top -= (overspill + 5);
                 }
-
-                var marginBottom = scrollY + innerHeight - pos.top - el.clientHeight,
-                    marginRight = scrollX + innerWidth - pos.left - el.clientWidth;
-
-                if (marginBottom < 0) pos.top += marginBottom;
-                if (pos.top < scrollY) pos.top = scrollY;
-                if (marginRight < 0) pos.left += marginRight;
-                if (pos.left < 0) pos.left = 0;
 
                 return pos;
             };
@@ -337,6 +327,7 @@
                     calendar.css({top: pos.top + "px", left: pos.left + "px", display: "block"});
                     togglePicker(true);
 
+                    adjustPos(pos, calendar.get(0), overlayContainer.get(0));
                     calendar.css({top: pos.top + "px", left: pos.left + "px"});
                 });
 
