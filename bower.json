@@ -1,7 +1,7 @@
 {
   "name": "rm-datepicker",
   "version": "1.0.0",
-  "description": "Clean and well optimized datepicker directive for angular",
+  "description": "Fork of rm-datepicker specially for parent-app",
   "main": [
     "dist/rm-datepicker.js",
     "dist/rm-datepicker.css"
