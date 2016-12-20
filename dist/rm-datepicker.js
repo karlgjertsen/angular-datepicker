@@ -142,7 +142,6 @@
             };
             var init = function () {
                 scope.initialDate = new Date(scope.initialDate || scope.model || new Date());
-                scope.$watch(scope.initialDate, function() { refresh(); });
             };
 
             var isBefore = function (oDate1, oDate2) {
@@ -168,12 +167,21 @@
             };
             scope.isActive = {
                 year: function (oDate) {
-                    return oDate.getFullYear() == scope.initialDate.getFullYear();
+                  if(scope.model){
+                    return oDate.getFullYear() == scope.model.getFullYear();
+                  }
+                  return oDate.getFullYear() == scope.initialDate.getFullYear();
                 },
                 month: function (oDate) {
-                    return oDate.getMonth() == scope.initialDate.getMonth();
+                  if(scope.model){
+                    return oDate.getMonth() == scope.model.getMonth();
+                  }
+                  return oDate.getMonth() == scope.initialDate.getMonth();
                 },
                 date: function (oDate) {
+                    if(scope.model){
+                        return oDate.getDate() == scope.model.getDate();
+                    }
                     return oDate.getDate() == scope.initialDate.getDate();
                 }
             };
@@ -194,10 +202,10 @@
 
                 scope.model = new Date(oDate);
                 scope.initialDate = scope.model;
-
-                $timeout(function () {
-                    ngModel.$setViewValue(scope.model);
-                });
+                //
+                // $timeout(function () {
+                //     ngModel.$setViewValue(scope.model);
+                // });
                 if (conf.toggleState) scope.toggleState(1);
 
                 if (m != scope.initialDate.getMonth()){
@@ -293,7 +301,10 @@
 
             if (isInput) {
                 ngModel.$parsers.push(function (sDate) {
-                    return new Date(sDate);
+                  if (typeof(sDate) === 'string' ) {
+                      return moment.utc(sDate, "DD/MM/YYYY").startOf('day').toDate();
+                  }
+                  return new Date(sDate);
                 });
                 ngModel.$formatters.push(function (oDate) {
                     return $filter('date')(oDate, conf.format);
@@ -329,6 +340,10 @@
 
                     adjustPos(pos, calendar.get(0), overlayContainer.get(0));
                     calendar.css({top: pos.top + "px", left: pos.left + "px"});
+
+                    $timeout(function () {
+                        refresh();
+                    }, 0);
                 });
 
                 $document.on('keydown', function (e) {
@@ -379,7 +394,7 @@
             '</div>' +
             '<div class="ng-class: state; square date">' +
                 '<div ng-repeat="oDate in aDates" ng-class="{j: isActive[\'date\'](oDate), off: isOff(oDate), out: !isActive[\'month\'](oDate)}">' +
-                    '<a ng-click="go(oDate)" class="waves-effect"><span>{{oDate.getDate()}}</span></a>' +
+                    '<a ng-click="go(oDate);" class="waves-effect"><span>{{oDate.getDate()}}</span></a>' +
                 '</div>' +
             '</div>' +
         '</script>';
