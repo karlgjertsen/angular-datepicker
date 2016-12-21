@@ -290,8 +290,8 @@
             };
 
             var adjustPos = function (pos, el, container) {
-
-                var overspill = (pos.top + el.clientHeight) - container.clientHeight;
+                var datePickerClientHeight = el.clientHeight < 100?342:el.clientHeight;
+                var overspill = (pos.top + datePickerClientHeight) - container.clientHeight;
                 if(overspill > 0){
                   pos.top -= (overspill + 5);
                 }
@@ -338,10 +338,10 @@
                     calendar.css({top: pos.top + "px", left: pos.left + "px", display: "block"});
                     togglePicker(true);
 
-                    adjustPos(pos, calendar.get(0), overlayContainer.get(0));
-                    calendar.css({top: pos.top + "px", left: pos.left + "px"});
-
                     $timeout(function () {
+                      adjustPos(pos, calendar.get(0), overlayContainer.get(0));
+                      calendar.css({top: pos.top + "px", left: pos.left + "px"});
+
                         refresh();
                     }, 0);
                 });
