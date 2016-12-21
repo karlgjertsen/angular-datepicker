@@ -142,6 +142,7 @@
             };
             var init = function () {
                 scope.initialDate = new Date(scope.initialDate || scope.model || new Date());
+                refresh();
             };
 
             var isBefore = function (oDate1, oDate2) {
@@ -338,10 +339,11 @@
                     calendar.css({top: pos.top + "px", left: pos.left + "px", display: "block"});
                     togglePicker(true);
 
-                    $timeout(function () {
-                      adjustPos(pos, calendar.get(0), overlayContainer.get(0));
-                      calendar.css({top: pos.top + "px", left: pos.left + "px"});
+                    adjustPos(pos, calendar.get(0), overlayContainer.get(0));
+                    calendar.css({top: pos.top + "px", left: pos.left + "px"});
 
+
+                    $timeout(function () {
                         refresh();
                     }, 0);
                 });
