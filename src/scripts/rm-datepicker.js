@@ -76,7 +76,7 @@
                     for (; i < n; Y++, i++) {
                         max = daysInMonth(Y, m);
                         if (d > max) d = max;
-                        aDecade[i] = new Date(Y, m, d, 0, 0, 0, 0);
+                        aDecade[i] = new Date(Y, m, d, 3, 0, 1, 0);
                     }
                     return aDecade;
                 },
@@ -89,14 +89,14 @@
                     for (; m < 12; m++) {
                         max = daysInMonth(Y, m);
                         if (d > max) d = max;
-                        aYear.push(new Date(Y, m, d, 0, 0, 0, 0));
+                        aYear.push(new Date(Y, m, d, 3, 0, 1, 0));
                     }
                     return aYear;
                 },
                 month: function (oDate) {
                     var Y = oDate.getFullYear(),
                         m = oDate.getMonth(),
-                        startDate = new Date(Y, m, 1, 0, 0, 0, 0),
+                        startDate = new Date(Y, m, 1, 3, 0, 1, 0),
                         n;
                     var startPos = startDate.getDay() || 7;
                     if (scope.mondayStart) startPos = startPos - 1 || 7;
